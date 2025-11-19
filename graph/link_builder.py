@@ -13,9 +13,12 @@ from typing import Iterable
 
 
 def build_links(symbols: Iterable[dict]) -> Iterable[tuple]:
-    """Generate graph edges from parsed symbol definitions.
+    """Generate graph edges from parsed symbol definitions."""
+edges = []
+    for sym in symbols:
+    from_name = sym.get("name")
+    for callee in sym.get("calls", []):
+    edges.append((from_name, callee, "calls"))
+return edges
 
-    TODO: Inspect the list of symbols (e.g. functions with their
-    callees) and yield tuples `(from_symbol, to_symbol, relation_type)`.
-    """
-    return []
+

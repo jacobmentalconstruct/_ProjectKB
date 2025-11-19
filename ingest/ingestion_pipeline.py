@@ -29,9 +29,36 @@ class IngestionPipeline:
         self.db = db
 
     def ingest_directory(self, path: Path) -> None:
-        """Recursively ingest files under *path*.
+        """Recursively ingest files under *path*."""
+from .tree_sitter import parse_source_with_tree_sitter
+        
+        for file_path in path.rglob("*"):
+        if not file_path.is_file():
+        continue
+    
+    ext = file_path.suffix.lower()
+    raw = file_path.read_bytes()
+    text = raw.decode("utf-8", errors="ignore")
+    
+    # Skip binary or empty files
+    if not text.strip():
+    continue
+    
+    print(f"Ingesting: {file_path}")
+    file_id = self.db.insert_file(str(file_path), raw, "")
+    
+    if ext == ".py":
+    chunks = parse_python_file(text)
+    elif ext in {".js", ".ts", ".rs"}:
+    chunks = parse_source_with_tree_sitter(text, ext[1:])
+    else:
+    chunks = split_plain_text(text)
+    
+    for chunk in chunks:
+    content = chunk.get("text") or ""
+    summary = chunk.get("summary") or ""
+    chunk_id = self.db.insert_chunk(file_id, content, summary)
+    # TODO: embed and store vector
+    # TODO: link graph edges
 
-        TODO: Use `Path.rglob` to find files, apply the correct parser,
-        summarise each chunk, generate an embedding, and store results.
-        """
-        pass
+

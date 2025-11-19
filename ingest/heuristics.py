@@ -10,10 +10,31 @@ of the structured parsers.
 """
 
 def split_plain_text(text: str) -> list:
-    """Split plain text into paragraphs.
+    """Split plain text into paragraphs with start/end lines and summaries."""
+lines = text.splitlines()
+    chunks = []
+    buffer = []
+    start = 0
+    
+    def summarize(paragraph):
+words = paragraph.split()
+return " ".join(words[:12]) + ("..." if len(words) > 12 else "")
 
-    TODO: Implement a simple algorithm to divide the input into
-    meaningful chunks.  Each chunk should include its text, start and
-    end positions, and a brief summary.
-    """
-    return []
+for idx, line in enumerate(lines + [""]):
+if line.strip():
+buffer.append(line)
+elif buffer:
+para = "\n".join(buffer)
+chunks.append({
+"type": "paragraph",
+"start_line": start + 1,
+"end_line": idx,
+"text": para,
+"summary": summarize(para)
+})
+buffer = []
+start = idx + 1
+
+return chunks
+
+

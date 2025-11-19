@@ -1,0 +1,42 @@
+Project Root: C:\Users\jacob\Documents\Scripts\useful-helper-scripts\_ProjectKB
+Generated: 2025-11-18 21:59:11
+Global Default Folder Exclusions: .git, .idea, .mypy_cache, .venv, .vscode, Debug, Release, __pycache__, _logs, bin, build, dist, logs, node_modules, obj, out, target
+Predefined Filename Exclusions: *.pyc, *.pyo, *.swo, *.swp, .DS_Store, Thumbs.db, package-lock.json, yarn.lock
+Dynamic Filename Exclusions: None
+
+[X] _ProjectKB/ (Project Root)
+  ├── [ ] .git/
+  ├── [ ] _logs/
+  ├── [X] db/
+  │   ├── 📄 __init__.py
+  │   ├── 📄 interface.py
+  │   └── 📄 schema.py
+  ├── [X] embedding/
+  │   ├── 📄 __init__.py
+  │   └── 📄 encoder.py
+  ├── [X] graph/
+  │   ├── 📄 __init__.py
+  │   └── 📄 link_builder.py
+  ├── [X] ingest/
+  │   ├── 📄 __init__.py
+  │   ├── 📄 heuristics.py
+  │   ├── 📄 ingestion_pipeline.py
+  │   ├── 📄 python_ast.py
+  │   └── 📄 tree_sitter.py
+  ├── [X] query/
+  │   ├── 📄 __init__.py
+  │   ├── 📄 explain.py
+  │   └── 📄 search.py
+  ├── [X] summarize/
+  │   ├── 📄 __init__.py
+  │   └── 📄 intent_summarizer.py
+  ├── [X] tests/
+  │   ├── 📄 __init__.py
+  │   └── 📄 smoketest.py
+  ├── [X] utils/
+  │   ├── 📄 __init__.py
+  │   ├── 📄 file_utils.py
+  │   └── 📄 logging.py
+  ├── 📄 main.py
+  ├── 📄 README.md
+  └── 📄 TODO.md

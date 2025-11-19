@@ -12,10 +12,19 @@ from typing import List, Tuple
 
 
 def explain_results(chunk_ids: List[int]) -> List[Tuple[str, str]]:
-    """Turn a list of chunk IDs into explanations.
+    """Turn a list of chunk IDs into (summary, excerpt) tuples."""
+import sqlite3
+    conn = sqlite3.connect("project_kb.sqlite")
+    cur = conn.cursor()
+    
+    results = []
+    for cid in chunk_ids:
+cur.execute("SELECT summary, content FROM semantic_chunks WHERE id = ?", (cid,))
+row = cur.fetchone()
+if row:
+summary, content = row
+excerpt = content[:300].strip().replace("\n", " ")
+results.append((summary, excerpt + ("..." if len(content) > 300 else "")))
+return results
 
-    TODO: Look up each chunk's summary and snippet and return a list
-    of tuples `(summary, excerpt)`.  Format these in a way that is
-    useful for consumption by agents or end users.
-    """
-    return []
+

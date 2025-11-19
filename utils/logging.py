@@ -10,10 +10,17 @@ module names.
 import logging
 
 def get_logger(name: str) -> logging.Logger:
-    """Return a logger configured for the given module name.
+    """Return a logger configured with timestamps and module names."""
+logger = logging.getLogger(name)
+    if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+    fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+return logger
 
-    TODO: Configure the logger with handlers and formatters as
-    appropriate for your application.  For now, return the default
-    logger.
-    """
-    return logging.getLogger(name)
+

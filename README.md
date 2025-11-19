@@ -25,4 +25,20 @@ organised by function:
 Each Python module contains a docstring describing its intended
 purpose and a TODO comment where implementation should begin.  You can
 expand or reorganise these modules as the project evolves.
+
+## Usage
+
+To ingest a directory of source files:
+```bash
+python main.py ingest path/to/project
+```
+
+To search for a concept or keyword:
+```bash
+python main.py query "search term"
+```
+
+This tool breaks files into semantic chunks, summarizes and embeds them, and supports basic keyword and embedding-based retrieval.
 """
+
+

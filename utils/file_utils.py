@@ -12,10 +12,16 @@ from typing import Iterable, List
 
 
 def discover_files(root: Path, extensions: Iterable[str]) -> List[Path]:
-    """Return a list of files under *root* matching the given extensions.
+    """Return a list of files under *root* matching the given extensions."""
+matches = []
+    skip_dirs = {".git", "__pycache__", ".venv", ".mypy_cache"}
+    
+    for path in root.rglob("*"):
+    if path.is_dir() and path.name in skip_dirs:
+    continue
+if path.is_file() and path.suffix.lower() in extensions:
+matches.append(path)
 
-    TODO: Implement recursive traversal that skips excluded directories
-    and files.  Use `Path.rglob` or similar functions to find
-    candidate files.
-    """
-    return []
+return matches
+
+

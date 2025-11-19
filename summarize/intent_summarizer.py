@@ -9,14 +9,11 @@ first non‑empty line; later you can integrate an AI model.
 """
 
 def summarise(text: str) -> str:
-    """Return a brief summary of *text*.
-
-    TODO: Replace this stub with a more sophisticated summarisation
-    algorithm.  For now, just return the first line (up to 80
-    characters).
-    """
-    for line in text.splitlines():
-        clean = line.strip()
-        if clean:
-            return clean[:80]
+    """Return a brief summary of *text* (first non-empty line, max 80 chars)."""
+for line in text.splitlines():
+    clean = line.strip()
+    if clean:
+    return clean[:77] + "..." if len(clean) > 80 else clean
     return ""
+
+

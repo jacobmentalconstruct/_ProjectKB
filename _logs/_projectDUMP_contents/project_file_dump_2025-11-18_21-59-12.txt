@@ -1,0 +1,841 @@
+File Dump from Project: C:\Users\jacob\Documents\Scripts\useful-helper-scripts\_ProjectKB
+Generated: 2025-11-18 21:59:12
+
+-------------------- FILE: main.py -----------------------------------------------------
+"""
+Main entry point for the Project KnowledgeBase application.
+
+This module is responsible for parsing command‑line arguments and
+dispatching to the appropriate sub‑commands.  It should coordinate
+ingestion of projects, searching the knowledge base, and any other
+top‑level operations.  For now it contains placeholder logic.
+"""
+
+def main() -> None:
+    """Entry function for the CLI dispatcher."""
+import argparse
+    from ingest.ingestion_pipeline import ingest_project
+    from query.search import run_query
+    from ingest.python_ast import generate_ast_report
+    
+    parser = argparse.ArgumentParser(description="Project KnowledgeBase CLI")
+subparsers = parser.add_subparsers(dest="command")
+
+# Ingest command
+ingest_parser = subparsers.add_parser("ingest", help="Ingest a project directory")
+ingest_parser.add_argument("--db", required=True, help="Path to the SQLite DB file")
+ingest_parser.add_argument("--path", required=True, help="Path to the project root")
+
+# Search command
+search_parser = subparsers.add_parser("search", help="Run semantic + graph query")
+search_parser.add_argument("--db", required=True, help="Path to the SQLite DB file")
+search_parser.add_argument("--query", required=True, help="Natural language query")
+
+# Report command
+report_parser = subparsers.add_parser("report", help="Generate symbol/AST report")
+report_parser.add_argument("--file", required=True, help="Path to Python file to report on")
+
+args = parser.parse_args()
+
+if args.command == "ingest":
+ingest_project(args.db, args.path)
+elif args.command == "search":
+run_query(args.db, args.query)
+elif args.command == "report":
+generate_ast_report(args.file)
+else:
+parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: README.md ---------------------------------------------------
+"""
+Project KnowledgeBase Scaffold
+=============================
+
+This scaffolding provides a modular starting point for building the
+Project KnowledgeBase application.  The goal of this layout is to
+separate concerns so that each part of the system can be developed
+independently and extended as needed.  The top‑level modules are
+organised by function:
+
+* **main.py** – Command‑line entrypoint and orchestration.
+* **db/** – Schema and database interface code.
+* **ingest/** – Code for parsing and ingesting different types of files.
+* **summarize/** – Utilities for summarising code or text into concise
+  descriptions.
+* **embedding/** – Helpers for generating vector representations of
+  text (e.g. TF‑IDF, sentence embeddings).
+* **graph/** – Logic for constructing and manipulating the symbol
+  graph of a project.
+* **query/** – Retrieval and explanation helpers.
+* **utils/** – Miscellaneous utilities, such as file scanning and
+  logging.
+* **tests/** – Placeholder directory for unit tests.
+
+Each Python module contains a docstring describing its intended
+purpose and a TODO comment where implementation should begin.  You can
+expand or reorganise these modules as the project evolves.
+
+## Usage
+
+To ingest a directory of source files:
+```bash
+python main.py ingest path/to/project
+```
+
+To search for a concept or keyword:
+```bash
+python main.py query "search term"
+```
+
+This tool breaks files into semantic chunks, summarizes and embeds them, and supports basic keyword and embedding-based retrieval.
+"""
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: TODO.md -----------------------------------------------------
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: db\interface.py ---------------------------------------------
+"""
+Database interface for Project KnowledgeBase.
+
+This module should provide a convenient API for working with the
+knowledge base.  Examples include inserting files, chunks, and
+relations; querying for chunks; and wrapping SQL queries behind
+friendly function calls.  The goal is to abstract away raw SQL so
+other parts of the application can remain agnostic of the database
+backend.
+"""
+
+import sqlite3
+from typing import Any, Iterable, Optional
+
+
+class KnowledgeBaseDB:
+    """High‑level interface for interacting with the knowledge base.
+
+    TODO: implement methods such as `insert_file`, `insert_chunk`,
+    `insert_relation`, `search_chunks`, etc.  These methods should
+    call SQL statements on a provided `sqlite3.Connection`.
+    """
+
+    def __init__(self, conn: sqlite3.Connection) -> None:
+        self.conn = conn
+        # Perhaps initialise the schema here
+
+    def insert_file(self, path: str, content: bytes, hash_value: str) -> int:
+        """Insert a file into the source_store table."""
+cur = self.conn.cursor()
+        cur.execute(
+        """
+        INSERT INTO source_store (path, content, hash)
+    VALUES (?, ?, ?)
+    """,
+    (path, content, hash_value)
+    )
+    self.conn.commit()
+    return cur.lastrowid
+
+    def insert_chunk(self, file_id: int, content: str, summary: str) -> int:
+    """Insert a semantic chunk and return its ID."""
+    cur = self.conn.cursor()
+    cur.execute(
+    """
+    INSERT INTO semantic_chunks (file_id, content, summary)
+    VALUES (?, ?, ?)
+    """,
+    (file_id, content, summary)
+    )
+    self.conn.commit()
+    return cur.lastrowid
+    
+    def search_chunks_by_keyword(self, keyword: str) -> Iterable[str]:
+    """Search chunks that contain a keyword."""
+    cur = self.conn.cursor()
+    cur.execute(
+    """
+    SELECT summary FROM semantic_chunks
+    WHERE content LIKE ?
+    """,
+    (f"%{keyword}%",)
+    )
+    return [row[0] for row in cur.fetchall()]
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: db\schema.py ------------------------------------------------
+"""
+Database schema definitions for Project KnowledgeBase.
+
+This module should create the tables needed to store source files,
+semantic chunks, embeddings, and graph relationships.  The schema
+should mirror the design described in the white paper.  Use SQL
+commands within Python to create tables only if they do not already
+exist.  Expose a function like `init_db(conn)` that accepts a
+`sqlite3.Connection` and creates the schema.
+"""
+
+import sqlite3
+
+
+def init_db(conn: sqlite3.Connection) -> None:
+    """Initialise the database schema.
+
+    TODO: Execute SQL statements to create the `source_store`,
+    `semantic_chunks`, `relation_graph`, and any other required
+    tables.  Commit the changes when done.
+    """
+    cur = conn.cursor()
+    # Example table: adjust columns to suit your needs
+    # Table for storing raw source files
+        cur.execute(
+        """
+            CREATE TABLE IF NOT EXISTS source_store (
+            id INTEGER PRIMARY KEY,
+        path TEXT NOT NULL,
+        content BLOB,
+    hash TEXT
+    )
+    """
+    )
+    
+    # Table for storing semantic chunks from source files
+    cur.execute(
+    """
+    CREATE TABLE IF NOT EXISTS semantic_chunks (
+    id INTEGER PRIMARY KEY,
+    file_id INTEGER NOT NULL,
+    content TEXT,
+    summary TEXT,
+    FOREIGN KEY (file_id) REFERENCES source_store(id)
+    )
+    """
+    )
+    
+    # Table for vector embeddings
+    cur.execute(
+    """
+    CREATE TABLE IF NOT EXISTS embeddings (
+    chunk_id INTEGER PRIMARY KEY,
+    vector BLOB,
+    FOREIGN KEY (chunk_id) REFERENCES semantic_chunks(id)
+    )
+    """
+    )
+    
+    # Table for graph relations between chunks (call, import, etc)
+    cur.execute(
+    """
+    CREATE TABLE IF NOT EXISTS relation_graph (
+    from_id INTEGER NOT NULL,
+    to_id INTEGER NOT NULL,
+    type TEXT,
+    FOREIGN KEY (from_id) REFERENCES semantic_chunks(id),
+    FOREIGN KEY (to_id) REFERENCES semantic_chunks(id)
+    )
+    """
+    )
+    conn.commit()
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: db\__init__.py ----------------------------------------------
+"""
+Database package for the Project KnowledgeBase.
+
+This package exposes modules that define the database schema and
+provide an interface for interacting with the underlying SQLite
+database.  Use the functions defined in `schema.py` to initialise
+tables and the classes in `interface.py` to perform CRUD operations.
+"""
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: embedding\encoder.py ----------------------------------------
+"""
+Text embedding utilities.
+
+Define functions or classes here to convert text into vectors.  A
+simple example might use scikit‑learn's `TfidfVectorizer` to produce
+sparse vectors.  Advanced implementations could import sentence
+embeddings from a transformer model.  The embedder should allow
+fitting on a corpus and transforming individual documents.
+"""
+
+from typing import List
+
+
+class SimpleEmbedder:
+    """Simple bag‑of‑words embedder.
+
+    TODO: Implement a minimal embedding class with `fit` and `transform`.
+    """
+
+    def fit(self, documents: List[str]) -> None:
+        from collections import Counter
+    self.vocab = {}
+    self.idf = {}
+    df = Counter()
+    total_docs = len(documents)
+    for doc in documents:
+    words = set(doc.lower().split())
+    for w in words:
+    df[w] += 1
+    self.vocab = {word: idx for idx, word in enumerate(df.keys())}
+    self.idf = {word: 1.0 + (total_docs / df[word]) for word in df}
+
+    def transform(self, document: str) -> List[float]:
+        from collections import Counter
+    if not hasattr(self, "vocab"):
+    raise RuntimeError("Embedder must be fit first")
+    vec = [0.0] * len(self.vocab)
+    words = document.lower().split()
+    tf = Counter(words)
+    for word, count in tf.items():
+    if word in self.vocab:
+    idx = self.vocab[word]
+    vec[idx] = float(count) * self.idf.get(word, 1.0)
+    return vec
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: embedding\__init__.py ---------------------------------------
+"""
+Embedding package for Project KnowledgeBase.
+
+This package provides utilities for converting text into numeric
+representations.  You might start with simple bag‑of‑words or TF‑IDF
+embeddings and later integrate transformer models.  The embedder
+should expose a single function that accepts a string and returns a
+vector suitable for similarity search.
+"""
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: graph\link_builder.py ---------------------------------------
+"""
+Graph link builder.
+
+This module contains logic for constructing relationships between
+symbols based on parsing output.  For example, given a list of
+function definitions and call information, create edges representing
+`calls` relationships.  You can extend this to include other edge
+types such as `imports` or `inherits`.  The output should be
+compatible with the `relation_graph` table in the database.
+"""
+
+from typing import Iterable
+
+
+def build_links(symbols: Iterable[dict]) -> Iterable[tuple]:
+    """Generate graph edges from parsed symbol definitions."""
+edges = []
+    for sym in symbols:
+    from_name = sym.get("name")
+    for callee in sym.get("calls", []):
+    edges.append((from_name, callee, "calls"))
+return edges
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: graph\__init__.py -------------------------------------------
+"""
+Graph package for Project KnowledgeBase.
+
+The graph layer stores and manipulates relationships between
+functions, classes, files, and other symbols.  Use this package to
+define edge types, build adjacency lists, and provide traversal
+functions.  The graph is essential for expanding search results via
+symbol relationships.
+"""
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: ingest\heuristics.py ----------------------------------------
+"""
+Fallback heuristics for ingestion.
+
+When no specialised parser exists for a given file type, use simple
+heuristic methods to split the file into chunks.  For example,
+markdown files can be split by headings, while plain text might be
+split on paragraphs.  These functions should produce a list of
+dictionaries or objects describing each chunk, similar to the output
+of the structured parsers.
+"""
+
+def split_plain_text(text: str) -> list:
+    """Split plain text into paragraphs with start/end lines and summaries."""
+lines = text.splitlines()
+    chunks = []
+    buffer = []
+    start = 0
+    
+    def summarize(paragraph):
+words = paragraph.split()
+return " ".join(words[:12]) + ("..." if len(words) > 12 else "")
+
+for idx, line in enumerate(lines + [""]):
+if line.strip():
+buffer.append(line)
+elif buffer:
+para = "\n".join(buffer)
+chunks.append({
+"type": "paragraph",
+"start_line": start + 1,
+"end_line": idx,
+"text": para,
+"summary": summarize(para)
+})
+buffer = []
+start = idx + 1
+
+return chunks
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: ingest\ingestion_pipeline.py --------------------------------
+"""
+Central ingestion pipeline for Project KnowledgeBase.
+
+This module orchestrates the scanning of directories, determination of
+file types, and delegation to the appropriate ingestion routines.  It
+should handle deduplication, call the summariser and embedder, and
+write results to the database via the interface layer.  The pipeline
+should also record relationships discovered during parsing.
+"""
+
+from pathlib import Path
+from typing import Iterable
+
+from ..db.interface import KnowledgeBaseDB
+from .python_ast import parse_python_file
+from .heuristics import split_plain_text
+
+
+class IngestionPipeline:
+    """High‑level ingestion workflow.
+
+    TODO: Walk through all files in a project, determine which parser
+    to invoke based on file extension, collect the output, call a
+    summariser, generate embeddings, and write everything to the
+    knowledge base via the `KnowledgeBaseDB` instance provided.
+    """
+
+    def __init__(self, db: KnowledgeBaseDB) -> None:
+        self.db = db
+
+    def ingest_directory(self, path: Path) -> None:
+        """Recursively ingest files under *path*."""
+from .tree_sitter import parse_source_with_tree_sitter
+        
+        for file_path in path.rglob("*"):
+        if not file_path.is_file():
+        continue
+    
+    ext = file_path.suffix.lower()
+    raw = file_path.read_bytes()
+    text = raw.decode("utf-8", errors="ignore")
+    
+    # Skip binary or empty files
+    if not text.strip():
+    continue
+    
+    print(f"Ingesting: {file_path}")
+    file_id = self.db.insert_file(str(file_path), raw, "")
+    
+    if ext == ".py":
+    chunks = parse_python_file(text)
+    elif ext in {".js", ".ts", ".rs"}:
+    chunks = parse_source_with_tree_sitter(text, ext[1:])
+    else:
+    chunks = split_plain_text(text)
+    
+    for chunk in chunks:
+    content = chunk.get("text") or ""
+    summary = chunk.get("summary") or ""
+    chunk_id = self.db.insert_chunk(file_id, content, summary)
+    # TODO: embed and store vector
+    # TODO: link graph edges
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: ingest\python_ast.py ----------------------------------------
+"""
+Python AST ingestion utilities.
+
+This module should define functions or classes that parse Python files
+using the built‑in `ast` module.  The goal is to extract structural
+information such as functions, classes, variables, and their
+relationships.  Use visitors or node walkers to traverse the AST
+selectively and produce a concise representation suitable for
+storage in the knowledge base.  Avoid dumping the entire AST; only
+capture what is necessary for understanding the code.
+"""
+
+import ast
+from typing import Iterable, List
+
+
+def parse_python_file(source: str) -> List[dict]:
+    """Parse a Python source file and return a list of symbol definitions."""
+tree = ast.parse(source)
+    symbols = []
+    
+    class SymbolVisitor(ast.NodeVisitor):
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+    symbols.append({
+    "type": "function",
+    "name": node.name,
+    "start_line": node.lineno,
+"end_line": getattr(node, "end_lineno", node.lineno),
+"docstring": ast.get_docstring(node) or ""
+})
+self.generic_visit(node)
+
+def visit_ClassDef(self, node: ast.ClassDef):
+symbols.append({
+"type": "class",
+"name": node.name,
+"start_line": node.lineno,
+"end_line": getattr(node, "end_lineno", node.lineno),
+"docstring": ast.get_docstring(node) or ""
+})
+self.generic_visit(node)
+
+SymbolVisitor().visit(tree)
+return symbols
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: ingest\tree_sitter.py ---------------------------------------
+"""
+Tree‑sitter ingestion utilities.
+
+This module should provide an interface for parsing files using the
+Tree‑sitter library.  Tree‑sitter produces concrete syntax trees for
+many languages and can be used to extract similar information to what
+`python_ast` provides for Python.  You will need to install and
+configure Tree‑sitter languages separately.
+"""
+
+def parse_source_with_tree_sitter(source: str, language: str) -> list:
+    """Parse source text using Tree‑sitter and return a list of symbols."""
+from tree_sitter import Parser
+    from tree_sitter_languages import get_language
+    
+    try:
+    ts_lang = get_language(language)
+except Exception:
+raise ValueError(f"Unsupported language for Tree-sitter: {language}")
+
+parser = Parser()
+parser.set_language(ts_lang)
+tree = parser.parse(bytes(source, "utf8"))
+root_node = tree.root_node
+
+def extract_symbols(node):
+symbols = []
+for child in node.children:
+if child.type in ("function", "function_definition", "method_definition", "class", "class_declaration"):
+symbols.append({
+"type": child.type,
+"name": child.child_by_field_name("name").text.decode("utf8") if child.child_by_field_name("name") else "<unknown>",
+"start_line": child.start_point[0] + 1,
+"end_line": child.end_point[0] + 1
+})
+symbols.extend(extract_symbols(child))
+return symbols
+
+return extract_symbols(root_node)
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: ingest\__init__.py ------------------------------------------
+"""
+Ingestion package for Project KnowledgeBase.
+
+This package contains modules responsible for parsing and extracting
+information from various file types.  Each submodule implements a
+parser for a specific language or format.  For example, `python_ast`
+handles Python files by walking the AST, while `tree_sitter` could
+support multiple languages via the Tree‑sitter library.  Fallback
+parsers live in `heuristics` for handling plain text or unknown
+formats.
+"""
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: query\explain.py --------------------------------------------
+"""
+Explanation utilities for Project KnowledgeBase.
+
+This module should take the results of a search and produce human‑readable
+responses.  For example, given a list of chunk IDs, fetch the
+associated summaries and a few lines of code/text, then compose a
+coherent answer for the user or agent.  This is also a good place to
+implement formatting logic for citations or code snippets.
+"""
+
+from typing import List, Tuple
+
+
+def explain_results(chunk_ids: List[int]) -> List[Tuple[str, str]]:
+    """Turn a list of chunk IDs into (summary, excerpt) tuples."""
+import sqlite3
+    conn = sqlite3.connect("project_kb.sqlite")
+    cur = conn.cursor()
+    
+    results = []
+    for cid in chunk_ids:
+cur.execute("SELECT summary, content FROM semantic_chunks WHERE id = ?", (cid,))
+row = cur.fetchone()
+if row:
+summary, content = row
+excerpt = content[:300].strip().replace("\n", " ")
+results.append((summary, excerpt + ("..." if len(content) > 300 else "")))
+return results
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: query\search.py ---------------------------------------------
+"""
+Search utilities for Project KnowledgeBase.
+
+Implement functions here to perform vector similarity search over
+embedded chunks.  You might reuse or wrap the embedder API and use
+cosine similarity to rank results.  Results should be passed to the
+explanation module for further processing.
+"""
+
+from typing import List
+
+
+def search_embeddings(query: str, top_k: int = 5) -> List[int]:
+    """Search the knowledge base for chunks relevant to *query*."""
+import sqlite3
+    import numpy as np
+    from embedding.encoder import SimpleEmbedder
+    
+    # Load DB
+    conn = sqlite3.connect("project_kb.sqlite")
+    cur = conn.cursor()
+
+# Load embeddings
+cur.execute("SELECT chunk_id, vector FROM embeddings")
+rows = cur.fetchall()
+
+# Rehydrate vectors
+db_vectors = []
+chunk_ids = []
+for cid, blob in rows:
+vec = np.frombuffer(blob, dtype=np.float32)
+db_vectors.append(vec)
+chunk_ids.append(cid)
+
+# Embed query
+embedder = SimpleEmbedder()
+embedder.vocab = {"sample": 0}  # TODO: load actual vocab
+qvec = np.array(embedder.transform(query), dtype=np.float32)
+
+# Compute cosine similarities
+def cosine(a, b):
+return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8)
+
+scores = [(cid, cosine(qvec, vec)) for cid, vec in zip(chunk_ids, db_vectors)]
+top = sorted(scores, key=lambda x: x[1], reverse=True)[:top_k]
+
+return [cid for cid, _ in top]
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: query\__init__.py -------------------------------------------
+"""
+Query package for Project KnowledgeBase.
+
+Modules in this package handle searching the knowledge base and
+formatting results.  Separate search logic from presentation logic
+where possible: one module computes a list of chunk IDs based on a
+query, and another module turns those IDs into human‑readable
+responses.
+"""
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: summarize\intent_summarizer.py ------------------------------
+"""
+Intent summariser implementation.
+
+This module defines the public API for summarising chunks of code or
+text.  It should expose a function (e.g. `summarise`) that takes a
+string and returns a concise sentence describing the purpose or
+behaviour of that string.  Initially, you might simply truncate the
+first non‑empty line; later you can integrate an AI model.
+"""
+
+def summarise(text: str) -> str:
+    """Return a brief summary of *text* (first non-empty line, max 80 chars)."""
+for line in text.splitlines():
+    clean = line.strip()
+    if clean:
+    return clean[:77] + "..." if len(clean) > 80 else clean
+    return ""
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: summarize\__init__.py ---------------------------------------
+"""
+Summarisation package for Project KnowledgeBase.
+
+This package contains functions and classes for creating concise
+descriptions of code or text.  Summarisation improves search by
+capturing intent rather than relying solely on keywords.  You can
+implement a simple heuristic summariser or integrate a language model
+here.  The intent summariser is responsible for converting a chunk
+into a one‑sentence description.
+"""
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: tests\smoketest.py ------------------------------------------
+"""
+Placeholder test module.
+
+This file demonstrates how to write a basic test.  Replace this test
+with real tests as you implement functionality.  Running the test
+suite should help ensure that individual units of the application
+behave as expected.
+"""
+
+def test_placeholder() -> None:
+    """Smoke test that instantiates DB and inserts a test file."""
+    from interface import KnowledgeBaseDB
+import tempfile
+
+with tempfile.NamedTemporaryFile(suffix=".sqlite") as tmp:
+db = KnowledgeBaseDB(tmp.name)
+file_id = db.insert_file("foo.py", b"print('hello')", "abc123")
+chunk_id = db.insert_chunk(file_id, "print('hello')", "hello call")
+results = db.search_chunks_by_keyword("hello")
+assert any("hello" in r for r in results)
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: tests\__init__.py -------------------------------------------
+"""
+Unit tests for Project KnowledgeBase.
+
+This package contains test modules that verify the correctness of
+individual components.  Each module under `project_kb_scaffold` should
+have a corresponding test file here.  Use a test framework such as
+`pytest` or Python's built‑in `unittest` to write tests.
+"""
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: utils\file_utils.py -----------------------------------------
+"""
+File utilities for Project KnowledgeBase.
+
+Provide functions to recursively discover files, compute file hashes,
+read file contents, and handle inclusion/exclusion patterns.  These
+helpers should be used by the ingestion pipeline to determine which
+files to process.
+"""
+
+from pathlib import Path
+from typing import Iterable, List
+
+
+def discover_files(root: Path, extensions: Iterable[str]) -> List[Path]:
+    """Return a list of files under *root* matching the given extensions."""
+matches = []
+    skip_dirs = {".git", "__pycache__", ".venv", ".mypy_cache"}
+    
+    for path in root.rglob("*"):
+    if path.is_dir() and path.name in skip_dirs:
+    continue
+if path.is_file() and path.suffix.lower() in extensions:
+matches.append(path)
+
+return matches
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: utils\logging.py --------------------------------------------
+"""
+Logging utilities for Project KnowledgeBase.
+
+Define functions or classes here to provide consistent logging across
+the application.  Consider using Python's built‑in `logging` module
+with customised formatters to include timestamps, log levels, and
+module names.
+"""
+
+import logging
+
+def get_logger(name: str) -> logging.Logger:
+    """Return a logger configured with timestamps and module names."""
+logger = logging.getLogger(name)
+    if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+    fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+return logger
+
+
+
+--------------------------------------------------------------------------------
+
+-------------------- FILE: utils\__init__.py -------------------------------------------
+"""
+Utility functions for Project KnowledgeBase.
+
+This package contains miscellaneous helper routines used across the
+project, such as file scanning, hashing, and logging.  Keeping these
+functions separate from business logic makes them easier to test and
+reuse.
+"""
+
+--------------------------------------------------------------------------------

@@ -15,13 +15,32 @@ from typing import Iterable, List
 
 
 def parse_python_file(source: str) -> List[dict]:
-    """Parse a Python source file and return a list of symbol definitions.
+    """Parse a Python source file and return a list of symbol definitions."""
+tree = ast.parse(source)
+    symbols = []
+    
+    class SymbolVisitor(ast.NodeVisitor):
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+    symbols.append({
+    "type": "function",
+    "name": node.name,
+    "start_line": node.lineno,
+"end_line": getattr(node, "end_lineno", node.lineno),
+"docstring": ast.get_docstring(node) or ""
+})
+self.generic_visit(node)
 
-    TODO: Walk the AST and return dictionaries containing details about
-    functions, classes, variables, and their relations.  Each dict
-    should include the name, start/end lines, docstring summary, and
-    any discovered relationships (e.g. calls, modifies).
-    """
-    tree = ast.parse(source)
-    # TODO: visit nodes and build symbol info
-    return []
+def visit_ClassDef(self, node: ast.ClassDef):
+symbols.append({
+"type": "class",
+"name": node.name,
+"start_line": node.lineno,
+"end_line": getattr(node, "end_lineno", node.lineno),
+"docstring": ast.get_docstring(node) or ""
+})
+self.generic_visit(node)
+
+SymbolVisitor().visit(tree)
+return symbols
+
+

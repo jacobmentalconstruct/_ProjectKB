@@ -26,10 +26,41 @@ class KnowledgeBaseDB:
         # Perhaps initialise the schema here
 
     def insert_file(self, path: str, content: bytes, hash_value: str) -> int:
-        """Insert a file into the source_store table.
-
-        TODO: implement and return the new file's ID.
+        """Insert a file into the source_store table."""
+cur = self.conn.cursor()
+        cur.execute(
         """
-        raise NotImplementedError
+        INSERT INTO source_store (path, content, hash)
+    VALUES (?, ?, ?)
+    """,
+    (path, content, hash_value)
+    )
+    self.conn.commit()
+    return cur.lastrowid
 
-    # Additional methods to be defined...
+    def insert_chunk(self, file_id: int, content: str, summary: str) -> int:
+    """Insert a semantic chunk and return its ID."""
+    cur = self.conn.cursor()
+    cur.execute(
+    """
+    INSERT INTO semantic_chunks (file_id, content, summary)
+    VALUES (?, ?, ?)
+    """,
+    (file_id, content, summary)
+    )
+    self.conn.commit()
+    return cur.lastrowid
+    
+    def search_chunks_by_keyword(self, keyword: str) -> Iterable[str]:
+    """Search chunks that contain a keyword."""
+    cur = self.conn.cursor()
+    cur.execute(
+    """
+    SELECT summary FROM semantic_chunks
+    WHERE content LIKE ?
+    """,
+    (f"%{keyword}%",)
+    )
+    return [row[0] for row in cur.fetchall()]
+
+
