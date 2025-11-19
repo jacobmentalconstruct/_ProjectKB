@@ -63,4 +63,16 @@ cur = self.conn.cursor()
     )
     return [row[0] for row in cur.fetchall()]
 
+    def insert_embedding(self, chunk_id: int, vector: list[float]) -> None:
+            import struct
+            # Pack list of floats into binary data
+            blob = struct.pack(f'{len(vector)}f', *vector)
+            
+            cur = self.conn.cursor()
+            cur.execute(
+                "INSERT OR REPLACE INTO embeddings (chunk_id, vector) VALUES (?, ?)",
+                (chunk_id, blob)
+            )
+            self.conn.commit()
+
 

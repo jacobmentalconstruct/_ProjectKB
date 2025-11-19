@@ -1,46 +1,27 @@
 """
-Text embedding utilities.
-
-Define functions or classes here to convert text into vectors.  A
-simple example might use scikit‑learn's `TfidfVectorizer` to produce
-sparse vectors.  Advanced implementations could import sentence
-embeddings from a transformer model.  The embedder should allow
-fitting on a corpus and transforming individual documents.
+Text embedding utilities using Ollama.
 """
-
+import requests
 from typing import List
 
-
-class SimpleEmbedder:
-    """Simple bag‑of‑words embedder.
-
-    TODO: Implement a minimal embedding class with `fit` and `transform`.
-    """
-
-    def fit(self, documents: List[str]) -> None:
-        from collections import Counter
-    self.vocab = {}
-    self.idf = {}
-    df = Counter()
-    total_docs = len(documents)
-    for doc in documents:
-    words = set(doc.lower().split())
-    for w in words:
-    df[w] += 1
-    self.vocab = {word: idx for idx, word in enumerate(df.keys())}
-    self.idf = {word: 1.0 + (total_docs / df[word]) for word in df}
+class OllamaEmbedder:
+    def __init__(self, model: str = "nomic-embed-text"):
+        self.model = model
+        self.api_url = "http://localhost:11434/api/embeddings"
 
     def transform(self, document: str) -> List[float]:
-        from collections import Counter
-    if not hasattr(self, "vocab"):
-    raise RuntimeError("Embedder must be fit first")
-    vec = [0.0] * len(self.vocab)
-    words = document.lower().split()
-    tf = Counter(words)
-    for word, count in tf.items():
-    if word in self.vocab:
-    idx = self.vocab[word]
-    vec[idx] = float(count) * self.idf.get(word, 1.0)
-    return vec
+        """Generate embeddings via Ollama API."""
+        try:
+            response = requests.post(self.api_url, json={
+                "model": self.model,
+                "prompt": document
+            })
+            response.raise_for_status()
+            return response.json()["embedding"]
+        except Exception as e:
+            print(f"Error embedding chunk: {e}")
+            return []
 
-
+    def fit(self, documents: List[str]) -> None:
+        # Stateless models don't need fitting
+        pass
